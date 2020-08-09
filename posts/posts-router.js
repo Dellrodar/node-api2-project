@@ -22,11 +22,11 @@ router.post("/api/posts/:id/comments", (req, res) => {
       if (post.length === 0) {
         return res.status(404).json({ message: "The post with the specified ID does not exist." })
       }
+      if (!req.body.text) {
+        return res.status(400).json({ errorMessage: "Please provide text for the comment." })
+      }
       Posts.insertComment(req.body)
         .then((comment) => {
-          if (!req.body.text) {
-            return res.status(400).json({ errorMessage: "Please provide text for the comment." })
-          }
           return res.status(201).json(comment)
         })
         .catch((error) => {
@@ -82,33 +82,40 @@ router.get("/api/posts/:id/comments", (req, res) => {
 
 
 router.delete("/api/posts/:id", (req, res) => {
-  const userPost = Posts.findById(req.params.id);
-  Posts.remove(userPost.id)
-    .then((post) => {
-      if ((post.length === 0)) {
+  Posts.findById(req.params.id)
+    .then(post => {
+      if (post.length === 0) {
         return res.status(404).json({ message: "The post with the specified ID does not exist." })
       }
-      return res.status(204).json({ message: "Post sucessfully deleted.", userPost })
+      Posts.remove(req.params.id)
+        .then((post) => {
+          return res.status(204).json({ message: "Post sucessfully deleted." })
+        })
+        .catch(error => {
+          return res.status(500).json({ error: "The post could not be removed" })
+        })
     })
-    .catch((error) => {
+    .catch(error => {
       return res.status(500).json({ error: "The post could not be removed" })
     })
-})
+});
 
 router.put("/api/posts/:id", (req, res) => {
-  const id = req.params.id
+  const id = Posts.parseId(req.params.id, res);
   const userPost = Posts.findById(id)
-  if (!userPost) {
+  if (userPost.length === 0) {
     return res.status(404).json({ message: "The post with the specified ID does not exist." })
   }
-  Posts.update(id, userPost)
+  if (!req.body.title || !req.body.contents) {
+    return res.status(400).json({ errorMessage: "Inside Catch: Please provide title and contents for the post." })
+  }
+  Posts.update(id, req.body)
     .then((post) => {
-      if (!req.body.title || !req.body.contents) {
-        return res.status(400).json({ errorMessage: "Please provide title and contents for the post." })
-      }
-      res.status(200).json(post)
+      console.log(post);
+      return res.status(200).json(post)
     })
     .catch((error) => {
+      console.log(error);
       return res.status(500).json({ error: "The post information could not be modified." })
     })
 })

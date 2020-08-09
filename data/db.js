@@ -11,6 +11,7 @@ module.exports = {
   findPostComments,
   findCommentById,
   insertComment,
+  parseId
 };
 
 function find() {
@@ -27,10 +28,11 @@ function insert(post) {
     .then(ids => ({ id: ids[0] }));
 }
 
-function update(id, post) {
-  return db('posts')
+async function update(id, post) {
+  await db('posts')
     .where('id', Number(id))
     .update(post);
+    return findById(id);
 }
 
 function remove(id) {
@@ -58,3 +60,10 @@ function insertComment(comment) {
     .insert(comment)
     .then(ids => ({ id: ids[0] }));
 }
+function parseId (id, res) {
+  const parsedId = parseInt(id, 10);
+  if (isNaN(parsedId)) {
+    return res.status(500).json({ error: 'Invalid ID passed' });
+  }
+  return parsedId;
+};
